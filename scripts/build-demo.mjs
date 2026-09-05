@@ -1,5 +1,5 @@
 /**
- * Build the static demo that gets deployed to Netlify.
+ * Build a portable static demo for any static file host.
  *
  * The demo is the real UI, unmodified. Rather than fork index.html, this
  * injects a shim that intercepts fetch() for the app's own endpoints and

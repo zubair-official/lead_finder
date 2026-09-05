@@ -1,9 +1,8 @@
 /**
  * Download the Chromium the scraper needs.
  *
- * Skipped where no browser will ever be launched: Netlify only builds the
- * static demo, and the Docker image already ships with browsers installed.
- * Without this, a demo deploy would pull ~150MB for nothing.
+ * Skipped when the caller explicitly says no browser is needed, or when the
+ * Docker image already ships with browsers installed.
  */
 
 import { spawnSync } from "node:child_process";
@@ -13,7 +12,7 @@ import { fileURLToPath } from "node:url";
 
 const ROOT = path.join(path.dirname(fileURLToPath(import.meta.url)), "..");
 
-const skip = process.env.NETLIFY || process.env.PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD || process.env.SKIP_BROWSER_DOWNLOAD;
+const skip = process.env.PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD || process.env.SKIP_BROWSER_DOWNLOAD;
 
 if (skip) {
   console.log("postinstall: skipping the Chromium download (no browser needed in this build).");

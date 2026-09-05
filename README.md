@@ -194,7 +194,7 @@ behaviour below more important, not less.
 
 ## Deploying
 
-**The app itself cannot run on Netlify, Vercel or any serverless host.** It
+**The app itself cannot run on a serverless or static-only host.** It
 needs a long-lived process, a real Chromium, a writable disk and 5-15 minutes
 per job; those platforms give none of the four. In particular the in-memory job
 store means `POST /search` and `GET /status/:jobId` would land on different
@@ -204,7 +204,7 @@ What you can deploy:
 
 | Where | What runs | Notes |
 | --- | --- | --- |
-| Netlify / any static host | The demo in `dist/` | Real UI, sample data, no scraper |
+| Any static file host | The demo in `dist/` | Real UI, sample data, no scraper |
 | Render / Railway / Fly.io / a VPS | Everything | Use the `Dockerfile`; see the warning below |
 | Your own machine | Everything | What it was built for |
 
@@ -228,9 +228,8 @@ The sample businesses are **fictional**, with reserved `555-01xx` numbers and
 `.example` domains. Publishing invented quality scores about real, named
 companies would be making public claims that might not be true.
 
-`netlify.toml` is already configured — point Netlify at the repo and it runs
-`npm run build:demo` and publishes `dist/`. Set `DEMO_REPO_URL` in the site's
-environment variables to put a GitHub link in the demo banner.
+Upload the generated `dist/` directory to any static file host. Set
+`DEMO_REPO_URL` while building to put a GitHub link in the demo banner.
 
 ### Running it for real on a host
 
@@ -283,7 +282,7 @@ search.
 | `src/emails.js` | Fetches each business's own site looking for an email |
 | `src/store.js` | Job state, and the incremental write to `runs/` |
 | `public/index.html` | The whole UI — form, live table, CSV export |
-| `scripts/build-demo.mjs` | Builds the static `dist/` demo for Netlify |
+| `scripts/build-demo.mjs` | Builds the portable static demo in `dist/` |
 | `demo/sample-data.json` | Fictional businesses used by that demo |
 
 ```
