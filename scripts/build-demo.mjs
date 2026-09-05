@@ -78,7 +78,8 @@ const shim = (data, categories) => `<script id="demo-data" type="application/jso
     }
 
     if (elapsed < MAPS_START_MS) {
-      return { state: "running", phase: "maps", message: 'Opening Google Maps for "cafe near Riverton"...',
+      return { state: "running", phase: "maps",
+        message: "Demo: replaying a saved sample run - your search terms are not used.",
         needs_attention: false, count: 0, results: [] };
     }
 
@@ -99,7 +100,8 @@ const shim = (data, categories) => `<script id="demo-data" type="application/jso
 
     const withEmail = ROWS.filter((row) => row.email).length;
     return { state: "done", phase: "finished",
-      message: \`Done. \${ROWS.length} businesses, \${withEmail} with an email address.\`,
+      message: \`Sample run finished: \${ROWS.length} fictional businesses, \${withEmail} with an email. \` +
+        "The real thing runs locally against Google Maps.",
       needs_attention: false, count: ROWS.length, results: ROWS };
   }
 
@@ -158,6 +160,21 @@ async function main() {
     "Capped at <span id=\"maxResults\">40</span>. This demo replays a saved run.",
   );
   out = out.replace("saved on disk in <code>runs/</code>", "one sample run");
+
+  // The demo ignores whatever is typed, so don't present a live search box.
+  out = out.replace(
+    /<p class="hint">[\s\S]*?<\/p>/,
+    '<p class="hint">Demo only &mdash; the sample run is replayed whatever you type here.</p>',
+  );
+  out = out.replace(
+    'placeholder="Lahore &mdash; or Gulberg Lahore, DHA Lahore"',
+    'placeholder="Riverton (sample)" value="Riverton" readonly',
+  );
+  out = out.replace(">Search<", ">Replay sample run<");
+  out = out.replace(
+    "Scrolls the results panel for each area you list, pausing between actions.",
+    "Scrolls the results panel for each area you list, pausing between actions. (Simulated here.)",
+  );
 
   await mkdir(OUT_DIR, { recursive: true });
   await writeFile(path.join(OUT_DIR, "index.html"), out, "utf8");

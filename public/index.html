@@ -91,6 +91,7 @@
   input[type=text]:focus, select:focus {
     outline: none; border-color: var(--blue); box-shadow: 0 0 0 3px var(--blue-soft);
   }
+  .hint { margin: 6px 0 0; font-size: 12px; color: var(--muted); max-width: 34ch; line-height: 1.4; }
   .checks { display: flex; flex-direction: column; gap: 9px; font-size: 14px; padding-bottom: 2px; }
   .checks label { display: flex; gap: 8px; align-items: center; color: var(--ink-soft); cursor: pointer; }
   input[type=checkbox] { accent-color: var(--blue); width: 15px; height: 15px; cursor: pointer; }
@@ -290,7 +291,7 @@
     <div class="steps">
       <div class="step">
         <h3><span class="step-n">1</span>Search Maps</h3>
-        <p>Scrolls the results panel for a category and city, pausing between actions. Capped at <span id="maxResults">40</span>.</p>
+        <p>Scrolls the results panel for each area you list, pausing between actions. Capped at <span id="maxResults">40</span> per area.</p>
       </div>
       <div class="step">
         <h3><span class="step-n">2</span>Visit each site</h3>
@@ -309,7 +310,9 @@
     <div class="controls">
       <div>
         <label class="field" for="city">City or area</label>
-        <input type="text" id="city" placeholder="e.g. Austin, TX" autocomplete="off">
+        <input type="text" id="city" placeholder="Lahore &mdash; or Gulberg Lahore, DHA Lahore" autocomplete="off"
+               title="Separate several areas with commas to sweep them one after another.">
+        <p class="hint">Comma-separate areas to sweep them in turn &mdash; Google caps any single search at ~120 results.</p>
       </div>
       <div>
         <label class="field" for="category">Category</label>

@@ -68,3 +68,24 @@ describe("config", () => {
     assert.equal(config.userDataDir, "");
   });
 });
+
+describe("scroll patience", () => {
+  it("defaults to a settle window and three strikes", () => {
+    const { config } = loadConfigWith({});
+    assert.equal(config.scrollSettleMs, 8000);
+    assert.equal(config.scrollStrikes, 3);
+  });
+
+  it("accepts a longer window for a slow connection", () => {
+    const { config } = loadConfigWith({ SCROLL_SETTLE_MS: "20000", SCROLL_STRIKES: "5" });
+    assert.equal(config.scrollSettleMs, 20000);
+    assert.equal(config.scrollStrikes, 5);
+  });
+
+  it("clamps absurd values instead of failing mid-run", () => {
+    const { config, warnings } = loadConfigWith({ SCROLL_SETTLE_MS: "999999", SCROLL_STRIKES: "0" });
+    assert.equal(config.scrollSettleMs, 60000);
+    assert.equal(config.scrollStrikes, 1);
+    assert.ok(warnings.length >= 2);
+  });
+});

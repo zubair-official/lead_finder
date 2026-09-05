@@ -11,11 +11,12 @@ import { readdir, readFile } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
+import { parseAreas } from "./src/areas.js";
 import { CATEGORIES } from "./src/categories.js";
 import { config, configWarnings, describeConfig } from "./src/config.js";
 import { SiteFetcher } from "./src/emails.js";
 import { log } from "./src/logger.js";
-import { BlockedError, ConsentRequired, scrape } from "./src/maps.js";
+import { BlockedError, ConsentRequired, identityKey, scrape } from "./src/maps.js";
 import { createJob, getJob, RUNS_DIR } from "./src/store.js";
 import { hasMailExchanger } from "./src/verify.js";
 
@@ -32,17 +33,34 @@ app.use(express.static(path.join(HERE, "public")));
 // refused rather than queued.
 let searchInFlight = false;
 
-/** The whole pipeline for one search: Maps pass, then the email pass. */
+/** The whole pipeline for one search: Maps pass over each area, then emails. */
 async function runSearch(job) {
   await job.writeMeta();
+  const areas = parseAreas(job.city);
+  // One business can appear in two neighbouring areas; keep the first sighting.
+  const seen = new Set();
+
   try {
-    await scrape(job.category, job.city, {
-      limit: config.maxResults,
-      onlyWithWebsite: job.onlyWithWebsite,
-      onResult: (row) => job.addResult(row),
-      onStatus: (message, options) => job.setStatus(message, options),
-      shouldStop: () => job.stopRequested,
-    });
+    for (const [index, area] of areas.entries()) {
+      if (job.stopRequested) break;
+      const prefix = areas.length > 1 ? `[${index + 1}/${areas.length}] ${area}: ` : "";
+
+      await scrape(job.category, area, {
+        limit: config.maxResults,
+        onlyWithWebsite: job.onlyWithWebsite,
+        onResult: (row) => {
+          const key = identityKey(row);
+          if (seen.has(key)) {
+            log.debug("skipping duplicate across areas", { name: row.name });
+            return undefined;
+          }
+          seen.add(key);
+          return job.addResult(row);
+        },
+        onStatus: (message, options) => job.setStatus(prefix + message, options),
+        shouldStop: () => job.stopRequested,
+      });
+    }
   } catch (error) {
     if (error instanceof BlockedError) {
       job.setStatus(
@@ -72,8 +90,9 @@ async function runSearch(job) {
     job.setStatus(`Stopped. ${job.results.length} businesses kept.`, { state: "stopped" });
   } else {
     const withEmail = job.results.filter((row) => row.email).length;
+    const across = areas.length > 1 ? ` across ${areas.length} areas` : "";
     job.setStatus(
-      `Done. ${job.results.length} businesses, ${withEmail} with an email address.`,
+      `Done. ${job.results.length} businesses${across}, ${withEmail} with an email address.`,
       { state: "done" },
     );
   }

@@ -236,45 +236,69 @@ async function handleConsent(page, onStatus) {
   );
 }
 
-/** Scroll the results panel until it stops growing, we hit the cap, or 10 scrolls. */
+/**
+ * Wait for Google to lazy-load the next batch after a scroll.
+ *
+ * Polls the DOM (no extra requests to Google) until the listing count grows or
+ * the settle window expires. Returning as soon as it grows keeps a fast
+ * connection fast; the window is what stops a slow one from being mistaken for
+ * the end of the list.
+ */
+async function waitForMoreListings(page, previousCount, timeoutMs) {
+  const deadline = Date.now() + timeoutMs;
+  while (Date.now() < deadline) {
+    await page.waitForTimeout(500);
+    const count = await page.locator(SELECTORS.cardLink).count();
+    if (count > previousCount) return count;
+  }
+  return previousCount;
+}
+
+/** Scroll the results panel until it stops growing, we hit the cap, or run out of scrolls. */
 async function scrollFeed(page, onStatus, shouldStop, limit) {
   const feed = page.locator(SELECTORS.feed).first();
-  let previous = 0;
+  let previous = await page.locator(SELECTORS.cardLink).count();
   let stagnant = 0;
 
   for (let scrollNumber = 1; scrollNumber <= MAX_SCROLLS; scrollNumber += 1) {
     if (shouldStop()) return;
 
-    const count = await page.locator(SELECTORS.cardLink).count();
-    if (count >= limit) {
-      onStatus(`Found ${count} listings - that's the cap, moving on.`);
+    if (previous >= limit) {
+      onStatus(`Found ${previous} listings - that's the cap, moving on.`);
       return;
     }
     if ((await page.locator(SELECTORS.endOfList).count()) > 0) {
-      onStatus(`Reached the end of Google's list at ${count} listings.`);
+      onStatus(`Reached the end of Google's list at ${previous} listings.`);
       return;
     }
-    if (count === previous) {
-      stagnant += 1;
-      if (stagnant >= 2) {
-        onStatus(`No new listings appearing - stopping at ${count}.`);
-        return;
-      }
-    } else {
-      stagnant = 0;
-    }
-    previous = count;
 
-    onStatus(`Scrolling for more listings (${count} so far, scroll ${scrollNumber}/${MAX_SCROLLS})...`);
+    onStatus(`Scrolling for more listings (${previous} so far, scroll ${scrollNumber}/${MAX_SCROLLS})...`);
     try {
       await feed.evaluate((element) => element.scrollBy(0, element.scrollHeight));
     } catch {
       log.debug("feed.evaluate scroll failed, falling back to mouse wheel");
       await page.mouse.wheel(0, 3000);
     }
+
+    // The etiquette pause happens first, then we give Google a further window
+    // to actually deliver the batch before judging the feed exhausted.
     await pause();
     await checkNotBlocked(page);
+    const count = await waitForMoreListings(page, previous, config.scrollSettleMs);
+
+    if (count === previous) {
+      stagnant += 1;
+      log.debug(`no growth after scroll ${scrollNumber} (strike ${stagnant}/${config.scrollStrikes})`);
+      if (stagnant >= config.scrollStrikes) {
+        onStatus(`No new listings after ${stagnant} tries - stopping at ${count}.`);
+        return;
+      }
+    } else {
+      stagnant = 0;
+    }
+    previous = count;
   }
+  onStatus(`Reached the scroll limit (${MAX_SCROLLS}) with ${previous} listings.`);
 }
 
 const normalise = (value) => String(value ?? "").replace(/\s+/g, " ").trim().toLowerCase();

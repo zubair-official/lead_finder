@@ -51,6 +51,48 @@ npm run scrape -- cafe "Austin, TX" --limit 10
 Flags: `--all` keeps businesses with no website, `--headed` opens a visible
 window so you can watch a run.
 
+## Coverage: why one search is never "all of them"
+
+Google Maps has no pagination. The results panel is an infinite-scroll feed
+that lazy-loads about 20 listings at a time, and **Google caps a single query
+at roughly 120 results** before it says "You've reached the end of the list" —
+a limit no scraper can get around. On top of that, `MAX_RESULTS` (40 by
+default) stops the run earlier still.
+
+So covering a city means **several smaller searches, not one big one**.
+Comma-separate areas in the city field and they run back-to-back, merged into
+one list and deduplicated by name + address:
+
+```
+Gulberg Lahore, DHA Lahore, Model Town Lahore, Johar Town Lahore
+```
+
+`MAX_RESULTS` applies per area, so four areas at 40 gives up to 160 businesses.
+Narrowing the category works the same way — `bbq`, `fast food` and `cafe` each
+get their own ceiling.
+
+Budget the time: each listing opens a detail panel and each website gets
+visited, so roughly 6-10 seconds per business. Forty results is about 5 minutes;
+a four-area sweep at 40 each is closer to half an hour.
+
+### If a search stops early
+
+The scroller waits up to `SCROLL_SETTLE_MS` (8s) after each scroll for Google
+to deliver the next batch, and only stops after `SCROLL_STRIKES` (3)
+consecutive scrolls with no new listings. On a slow connection, raise both —
+an earlier 2-strike rule with no settle window was cutting runs short at ~18
+results while Google was still loading.
+
+```bash
+SCROLL_SETTLE_MS=15000
+SCROLL_STRIKES=5
+PAUSE_MIN_MS=3000
+PAUSE_MAX_MS=6000
+```
+
+`LOG_LEVEL=debug` prints the count after every scroll, which tells you whether
+you are hitting Google's ceiling or your own.
+
 ## Lead scoring
 
 The email pass already downloads each business's homepage, so grading the site
@@ -98,6 +140,8 @@ the file. Everything is optional.
 | `USER_DATA_DIR` | `.browser-profile` | Persists cookies between runs; `""` for a throwaway profile |
 | `MAX_RESULTS` | `40` | 1–200. Big runs are slow and raise your block risk |
 | `MAX_SCROLLS` | `10` | How hard to work the results panel |
+| `SCROLL_SETTLE_MS` | `8000` | How long to wait for a lazy-loaded batch before giving up |
+| `SCROLL_STRIKES` | `3` | Consecutive no-growth scrolls before stopping |
 | `PAUSE_MIN_MS` / `PAUSE_MAX_MS` | `2000` / `5000` | Delay between actions. **Floored at 1000ms** |
 | `LOOKUP_EMAILS` | `true` | Turn off for a Maps-only run |
 | `EMAIL_TIMEOUT_MS` | `10000` | Per-request timeout when fetching a business site |
@@ -215,6 +259,7 @@ search.
 | `src/verify.js` | DNS MX check for found email addresses |
 | `src/config.js` | Environment parsing, validation and clamping |
 | `src/logger.js` | Small levelled logger |
+| `src/areas.js` | Splits "A, B, C" into separate searches |
 | `src/maps.js` | Playwright pass over Google Maps |
 | `src/emails.js` | Fetches each business's own site looking for an email |
 | `src/store.js` | Job state, and the incremental write to `runs/` |

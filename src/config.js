@@ -79,6 +79,11 @@ export const config = Object.freeze({
 
   maxResults,
   maxScrolls: readInt("MAX_SCROLLS", 10, { min: 1, max: 30 }),
+  // How long to keep watching for a lazy-loaded batch after a scroll before
+  // calling the feed exhausted. The old fixed 2-strike rule gave up on slow
+  // connections while Google was still loading.
+  scrollSettleMs: readInt("SCROLL_SETTLE_MS", 8000, { min: 1000, max: 60_000 }),
+  scrollStrikes: readInt("SCROLL_STRIKES", 3, { min: 1, max: 10 }),
   pauseMinMs: Math.min(pauseMin, pauseMax),
   pauseMaxMs: Math.max(pauseMin, pauseMax),
   navigationTimeoutMs: readInt("NAVIGATION_TIMEOUT_MS", 60_000, { min: 5_000, max: 180_000 }),
