@@ -1,0 +1,27 @@
+{
+  "name": "lead-finder",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Find local businesses on Google Maps, grade their websites, and pull contact emails - a lead finder for web developers.",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "scrape": "node src/maps.js",
+    "test": "node --test \"test/**/*.test.js\"",
+    "postinstall": "node scripts/postinstall.mjs",
+    "build:demo": "node scripts/build-demo.mjs",
+    "preview:demo": "node scripts/serve-demo.mjs"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "dependencies": {
+    "@netlify/functions": "^6.0.0",
+    "cheerio": "^1.0.0",
+    "express": "^4.22.2",
+    "playwright": "1.47.0",
+    "robots-parser": "^3.0.1",
+    "serverless-http": "^4.0.0"
+  }
+}

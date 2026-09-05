@@ -1,0 +1,861 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lead Finder</title>
+<style>
+  /* Three-colour palette: white canvas, blue for actions, green for success.
+     Neutrals are greys only - no other hues anywhere in the UI.
+     Contrast on white: #2563eb 5.17:1, #236B50 6.38:1 (both WCAG AA). */
+  :root {
+    --white: #ffffff;
+    --canvas: #f7f9fc;
+    --blue: #2563eb;
+    --blue-hover: #1d4ed8;
+    --blue-soft: #eff4ff;
+    --blue-line: #c7d9fd;
+    --green: #236b50;
+    --green-hover: #1b5540;
+    --green-soft: #ecf6f1;
+    --green-line: #b9dcca;
+
+    --ink: #111827;
+    --ink-soft: #3f4854;
+    --muted: #6b7280;
+    --line: #e4e8ee;
+    --line-soft: #eef1f5;
+
+    --shadow-sm: 0 1px 2px rgba(17, 24, 39, .05);
+    --shadow: 0 1px 3px rgba(17, 24, 39, .06), 0 8px 24px rgba(17, 24, 39, .06);
+    --radius: 12px;
+  }
+
+  * { box-sizing: border-box; }
+  html { color-scheme: light; }
+  body {
+    margin: 0; padding: 0 0 72px; background: var(--canvas); color: var(--ink);
+    font: 15px/1.55 -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    -webkit-font-smoothing: antialiased;
+  }
+  .wrap { max-width: 1240px; margin: 0 auto; padding: 0 24px; }
+
+  /* ---------- intro header ---------- */
+  .masthead { background: var(--white); border-bottom: 1px solid var(--line); padding: 30px 0 26px; margin-bottom: 26px; }
+  .masthead-top { display: flex; align-items: flex-start; justify-content: space-between; gap: 24px; flex-wrap: wrap; }
+  .brand { display: flex; align-items: center; gap: 11px; margin-bottom: 12px; }
+  .mark {
+    width: 32px; height: 32px; border-radius: 9px; background: var(--blue); flex: none;
+    display: grid; place-items: center; color: var(--white);
+  }
+  .mark svg { width: 18px; height: 18px; }
+  h1 { font-size: 21px; letter-spacing: -.015em; margin: 0; }
+  .lede { margin: 0; font-size: 15px; color: var(--ink-soft); max-width: 66ch; }
+  .lede strong { color: var(--ink); font-weight: 600; }
+
+  .steps { display: flex; gap: 10px; margin-top: 18px; flex-wrap: wrap; }
+  .step {
+    flex: 1 1 190px; border: 1px solid var(--line); border-radius: 10px; padding: 12px 14px;
+    background: var(--canvas);
+  }
+  .step-n {
+    display: inline-grid; place-items: center; width: 19px; height: 19px; border-radius: 50%;
+    background: var(--blue); color: var(--white); font-size: 11px; font-weight: 700; margin-right: 7px;
+  }
+  .step h3 { margin: 0 0 4px; font-size: 13px; font-weight: 650; display: flex; align-items: center; }
+  .step p { margin: 0; font-size: 12.5px; color: var(--muted); line-height: 1.45; }
+
+  .modes { display: flex; gap: 7px; flex-wrap: wrap; }
+  .chip {
+    font-size: 11.5px; font-weight: 600; letter-spacing: .02em; padding: 4px 10px;
+    border-radius: 999px; border: 1px solid var(--line); color: var(--muted);
+    background: var(--white); white-space: nowrap;
+  }
+  .chip.on { border-color: var(--green-line); background: var(--green-soft); color: var(--green); }
+
+  /* ---------- panels & controls ---------- */
+  .panel {
+    background: var(--white); border: 1px solid var(--line); border-radius: var(--radius);
+    box-shadow: var(--shadow-sm); padding: 20px; margin-bottom: 18px;
+  }
+  .controls { display: flex; flex-wrap: wrap; gap: 18px; align-items: flex-end; }
+  label.field {
+    display: block; font-size: 11.5px; font-weight: 650; letter-spacing: .05em;
+    text-transform: uppercase; color: var(--muted); margin-bottom: 6px;
+  }
+  input[type=text], select {
+    padding: 10px 12px; border: 1px solid var(--line); border-radius: 9px; font-size: 15px;
+    background: var(--white); color: var(--ink); min-width: 220px; font-family: inherit;
+    transition: border-color .15s ease, box-shadow .15s ease;
+  }
+  input[type=text]:focus, select:focus {
+    outline: none; border-color: var(--blue); box-shadow: 0 0 0 3px var(--blue-soft);
+  }
+  .checks { display: flex; flex-direction: column; gap: 9px; font-size: 14px; padding-bottom: 2px; }
+  .checks label { display: flex; gap: 8px; align-items: center; color: var(--ink-soft); cursor: pointer; }
+  input[type=checkbox] { accent-color: var(--blue); width: 15px; height: 15px; cursor: pointer; }
+
+  button {
+    padding: 10px 20px; border: 1px solid transparent; border-radius: 9px; font-size: 14.5px;
+    font-weight: 600; cursor: pointer; font-family: inherit; background: var(--blue); color: var(--white);
+    transition: background .15s ease, transform .12s ease, box-shadow .15s ease, border-color .15s ease;
+  }
+  button:hover:not(:disabled) { background: var(--blue-hover); transform: translateY(-1px); box-shadow: var(--shadow-sm); }
+  button:active:not(:disabled) { transform: translateY(0); }
+  button:focus-visible { outline: none; box-shadow: 0 0 0 3px var(--blue-soft); }
+  button.secondary { background: var(--white); color: var(--ink-soft); border-color: var(--line); }
+  button.secondary:hover:not(:disabled) { background: var(--canvas); color: var(--ink); border-color: var(--blue-line); }
+  button.export { background: var(--green); color: var(--white); }
+  button.export:hover:not(:disabled) { background: var(--green-hover); }
+  button.small { padding: 7px 12px; font-size: 13px; }
+  button:disabled { opacity: .45; cursor: not-allowed; transform: none; box-shadow: none; }
+
+  /* ---------- status ---------- */
+  #status { display: none; align-items: center; gap: 12px; font-size: 14px; }
+  #status.on { display: flex; }
+  #status.working { border-color: var(--blue-line); background: var(--blue-soft); color: var(--ink-soft); }
+  #status.attention { border-color: var(--blue-line); background: var(--blue-soft); color: var(--blue-hover); }
+  #status.done { border-color: var(--green-line); background: var(--green-soft); color: var(--green); }
+  #status.blocked { border-color: var(--line); background: var(--white); color: var(--ink); }
+  #statusText { transition: opacity .2s ease; }
+  #statusText.swap { opacity: .35; }
+  .spinner {
+    flex: none; width: 16px; height: 16px; border-radius: 50%;
+    border: 2px solid var(--blue-line); border-top-color: var(--blue);
+    animation: spin .75s linear infinite;
+  }
+  #status.done .spinner, #status.blocked .spinner { display: none; }
+  #status.done .badge, #status.blocked .badge { display: grid; }
+  .badge {
+    display: none; flex: none; width: 18px; height: 18px; border-radius: 50%;
+    place-items: center; font-size: 11px; font-weight: 700; color: var(--white); background: var(--green);
+  }
+  #status.blocked .badge { background: var(--ink); }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  /* ---------- results toolbar ---------- */
+  .bar { display: flex; justify-content: space-between; align-items: center; gap: 14px; margin-bottom: 14px; flex-wrap: wrap; }
+  .tally { display: flex; align-items: center; gap: 10px; font-size: 14px; }
+  .count { font-weight: 650; font-size: 15px; }
+  .pill {
+    font-size: 12px; font-weight: 650; padding: 3px 10px; border-radius: 999px;
+    background: var(--green-soft); color: var(--green); border: 1px solid var(--green-line);
+  }
+  .live-dot {
+    width: 7px; height: 7px; border-radius: 50%; background: var(--blue); flex: none;
+    animation: breathe 1.5s ease-in-out infinite;
+  }
+  @keyframes breathe { 0%, 100% { opacity: 1; transform: scale(1); } 50% { opacity: .3; transform: scale(.7); } }
+  .tools { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+  .filter-box { position: relative; }
+  .filter-box input { min-width: 200px; padding: 8px 11px 8px 30px; font-size: 13.5px; border-radius: 8px; }
+  .filter-box svg { position: absolute; left: 10px; top: 50%; transform: translateY(-50%); width: 13px; height: 13px; color: var(--muted); }
+
+  .menu-wrap { position: relative; }
+  .menu {
+    display: none; position: absolute; right: 0; top: calc(100% + 6px); z-index: 20;
+    background: var(--white); border: 1px solid var(--line); border-radius: 10px;
+    box-shadow: var(--shadow); padding: 8px; min-width: 190px;
+  }
+  .menu.open { display: block; }
+  .menu label {
+    display: flex; align-items: center; gap: 8px; padding: 6px 8px; border-radius: 6px;
+    font-size: 13.5px; color: var(--ink-soft); cursor: pointer;
+  }
+  .menu label:hover { background: var(--canvas); }
+
+  /* ---------- table ---------- */
+  .table-scroll { overflow-x: auto; margin: 0 -20px -20px; padding: 0 20px; }
+  table { width: 100%; border-collapse: collapse; font-size: 14px; }
+  thead th {
+    position: sticky; top: 0; z-index: 1; background: var(--white);
+    text-align: left; padding: 9px 12px 11px; font-size: 11.5px; font-weight: 650;
+    text-transform: uppercase; letter-spacing: .05em; color: var(--muted);
+    border-bottom: 1px solid var(--line); white-space: nowrap;
+  }
+  thead th.sortable { cursor: pointer; user-select: none; }
+  thead th.sortable:hover { color: var(--blue); }
+  thead th .arrow { opacity: 0; margin-left: 3px; }
+  thead th.sorted { color: var(--blue); }
+  thead th.sorted .arrow { opacity: 1; }
+  tbody td { padding: 11px 12px; border-bottom: 1px solid var(--line-soft); vertical-align: top; }
+  tbody tr:last-child td { border-bottom: 0; }
+  tbody tr:hover td { background: var(--canvas); }
+  td.name { font-weight: 600; }
+  td.dim, .dim { color: var(--muted); }
+  td.nowrap { white-space: nowrap; }
+  a { color: var(--blue); text-decoration: none; }
+  a:hover { text-decoration: underline; }
+  a.email { color: var(--green); font-weight: 550; }
+  .empty { color: var(--muted); text-align: center; padding: 44px 0; font-size: 14px; }
+  .empty-title { color: var(--ink); font-weight: 600; display: block; margin-bottom: 4px; }
+
+  .copy {
+    border: 0; background: none; padding: 2px 4px; margin-left: 4px; cursor: pointer;
+    color: var(--muted); font-size: 11px; border-radius: 4px; opacity: 0; transition: opacity .15s ease;
+  }
+  tr:hover .copy { opacity: 1; }
+  .copy:hover { background: var(--blue-soft); color: var(--blue); transform: none; box-shadow: none; }
+  .copy.done { color: var(--green); opacity: 1; }
+
+  /* score + signals */
+  .score { display: flex; align-items: center; gap: 7px; }
+  .score-num { font-weight: 700; font-size: 13px; min-width: 22px; }
+  .score-bar { width: 42px; height: 5px; border-radius: 3px; background: var(--line-soft); overflow: hidden; }
+  .score-fill { height: 100%; border-radius: 3px; background: var(--muted); }
+  .score.high .score-num { color: var(--green); }
+  .score.high .score-fill { background: var(--green); }
+  .score.medium .score-num { color: var(--blue); }
+  .score.medium .score-fill { background: var(--blue); }
+  .score.low .score-num { color: var(--muted); }
+  .signals { display: flex; flex-wrap: wrap; gap: 4px; max-width: 250px; }
+  .sig {
+    font-size: 11px; font-weight: 550; padding: 2px 7px; border-radius: 5px;
+    background: var(--blue-soft); color: var(--blue-hover); border: 1px solid var(--blue-line);
+    white-space: nowrap;
+  }
+  .sig.strong { background: var(--green-soft); color: var(--green); border-color: var(--green-line); }
+  .verified { color: var(--green); font-size: 11px; font-weight: 700; margin-left: 4px; }
+  .unverified { color: var(--muted); font-size: 11px; margin-left: 4px; }
+
+  /* ---------- run history ---------- */
+  .history-head { display: flex; justify-content: space-between; align-items: center; gap: 12px; cursor: pointer; }
+  .history-head h2 { margin: 0; font-size: 14px; font-weight: 650; }
+  .history-body { display: none; margin-top: 14px; }
+  .history-body.open { display: block; }
+  .runs { display: grid; gap: 8px; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); }
+  .run {
+    text-align: left; background: var(--white); border: 1px solid var(--line); border-radius: 9px;
+    padding: 11px 13px; cursor: pointer; color: var(--ink); font: inherit; transition: border-color .15s ease, background .15s ease;
+  }
+  .run:hover { border-color: var(--blue-line); background: var(--blue-soft); transform: none; box-shadow: none; }
+  .run-title { font-weight: 600; font-size: 13.5px; margin-bottom: 3px; }
+  .run-meta { font-size: 12px; color: var(--muted); }
+  .caret { transition: transform .2s ease; color: var(--muted); }
+  .caret.open { transform: rotate(90deg); }
+
+  /* ---------- purposeful motion ---------- */
+  @keyframes rowIn { from { opacity: 0; transform: translateY(-7px); } to { opacity: 1; transform: none; } }
+  @keyframes rowFlash { from { background: var(--blue-soft); } to { background: transparent; } }
+  tr.is-new { animation: rowIn .3s cubic-bezier(.2, .8, .3, 1) both; }
+  tr.is-new td { animation: rowFlash 2.4s ease-out .3s both; }
+  tr.is-new td:first-child { box-shadow: inset 3px 0 0 var(--blue); }
+  @keyframes cellFill { from { opacity: 0; transform: translateY(-3px); } to { opacity: 1; transform: none; } }
+  @keyframes cellGlow { from { background: var(--green-soft); } to { background: transparent; } }
+  td.just-filled { animation: cellGlow 2s ease-out both; }
+  td.just-filled > * { animation: cellFill .35s ease-out both; }
+  .waiting {
+    display: inline-block; width: 18px; height: 3px; border-radius: 2px;
+    background: var(--line); animation: waitPulse 1.4s ease-in-out infinite;
+  }
+  @keyframes waitPulse { 0%, 100% { opacity: .35; } 50% { opacity: 1; } }
+
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after { animation: none !important; transition: none !important; }
+    tr.is-new td { background: var(--blue-soft); }
+  }
+  @media (max-width: 760px) {
+    .steps { flex-direction: column; }
+    .bar { align-items: flex-start; }
+  }
+</style>
+</head>
+<body>
+
+<header class="masthead">
+  <div class="wrap">
+    <div class="masthead-top">
+      <div>
+        <div class="brand">
+          <span class="mark" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="11" cy="11" r="7"/><path d="M20 20l-3.6-3.6"/>
+            </svg>
+          </span>
+          <h1>Lead Finder</h1>
+        </div>
+        <p class="lede">
+          Finds local businesses on Google Maps, keeps the ones with a website, then visits
+          each site to pull a contact email and <strong>grade how much work it needs</strong>.
+          Built for web developers looking for clients: a café on plain HTTP with no mobile
+          layout and a 2017 copyright is a warmer lead than one with a current site.
+        </p>
+      </div>
+      <div class="modes">
+        <span class="chip" id="modeChip">&nbsp;</span>
+        <span class="chip" id="emailChip">&nbsp;</span>
+      </div>
+    </div>
+
+    <div class="steps">
+      <div class="step">
+        <h3><span class="step-n">1</span>Search Maps</h3>
+        <p>Scrolls the results panel for a category and city, pausing between actions. Capped at <span id="maxResults">40</span>.</p>
+      </div>
+      <div class="step">
+        <h3><span class="step-n">2</span>Visit each site</h3>
+        <p>One polite request per business finds a contact email and checks the site's condition.</p>
+      </div>
+      <div class="step">
+        <h3><span class="step-n">3</span>Rank and export</h3>
+        <p>Sort by opportunity score, filter, then take the whole list as CSV or JSON.</p>
+      </div>
+    </div>
+  </div>
+</header>
+
+<div class="wrap">
+  <div class="panel">
+    <div class="controls">
+      <div>
+        <label class="field" for="city">City or area</label>
+        <input type="text" id="city" placeholder="e.g. Austin, TX" autocomplete="off">
+      </div>
+      <div>
+        <label class="field" for="category">Category</label>
+        <select id="category"><!-- filled from /api/config --></select>
+      </div>
+      <div class="checks">
+        <label><input type="checkbox" id="onlyWebsite" checked> Only businesses with a website</label>
+        <label><input type="checkbox" id="lookupEmails" checked> Look up emails &amp; grade sites (slower)</label>
+      </div>
+      <div style="display:flex; gap:10px;">
+        <button id="searchBtn">Search</button>
+        <button id="stopBtn" class="secondary" style="display:none">Stop</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="panel" id="status" role="status" aria-live="polite">
+    <div class="spinner"></div>
+    <span class="badge" id="statusBadge"></span>
+    <div id="statusText"></div>
+  </div>
+
+  <div class="panel">
+    <div class="history-head" id="historyHead" role="button" tabindex="0" aria-expanded="false">
+      <h2><span class="caret" id="historyCaret">&rsaquo;</span> Past runs <span class="dim" id="historyCount"></span></h2>
+      <span class="dim" style="font-size:12.5px">saved on disk in <code>runs/</code></span>
+    </div>
+    <div class="history-body" id="historyBody">
+      <div class="runs" id="runs"></div>
+    </div>
+  </div>
+
+  <div class="panel">
+    <div class="bar">
+      <div class="tally">
+        <span class="live-dot" id="liveDot" style="display:none"></span>
+        <span class="count" id="count">No results yet</span>
+        <span class="pill" id="emailPill" style="display:none"></span>
+      </div>
+      <div class="tools">
+        <div class="filter-box">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round">
+            <circle cx="11" cy="11" r="7"/><path d="M20 20l-3.4-3.4"/>
+          </svg>
+          <input type="text" id="filter" placeholder="Filter results..." autocomplete="off">
+        </div>
+        <div class="menu-wrap">
+          <button class="secondary small" id="columnsBtn">Columns</button>
+          <div class="menu" id="columnsMenu"></div>
+        </div>
+        <button class="secondary small" id="exportJsonBtn" disabled>JSON</button>
+        <button class="export small" id="exportBtn" disabled>Export CSV</button>
+      </div>
+    </div>
+    <div class="table-scroll">
+      <table>
+        <thead><tr id="head"></tr></thead>
+        <tbody id="rows">
+          <tr id="emptyRow"><td colspan="9" class="empty">
+            <span class="empty-title">No results yet</span>
+            Pick a city and a category above to start a search.
+          </td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<script>
+const el = (id) => document.getElementById(id);
+
+/* Column definitions drive the header, the body, the column menu and export. */
+const COLUMNS = [
+  { key: "score",    label: "Score",    sortable: true,  numeric: true },
+  { key: "name",     label: "Name",     sortable: true },
+  { key: "signals",  label: "Signals",  sortable: false },
+  { key: "category", label: "Category", sortable: true },
+  { key: "rating",   label: "Rating",   sortable: true,  numeric: true },
+  { key: "address",  label: "Address",  sortable: true },
+  { key: "phone",    label: "Phone",    sortable: false },
+  { key: "website",  label: "Website",  sortable: true },
+  { key: "email",    label: "Email",    sortable: true },
+];
+const SIGNAL_LABELS = {
+  unreachable: "site won't load", social_only: "social page only", no_https: "no HTTPS",
+  no_viewport: "not mobile-ready", missing_title: "no page title", stale_copyright: "stale copyright",
+  slow: "slow to load", site_builder: "site builder", no_description: "no meta description",
+};
+const STRONG_SIGNALS = new Set(["unreachable", "social_only", "no_https", "no_viewport"]);
+
+let jobId = null, poller = null, latest = [], emailPassRunning = false;
+let sortKey = "score", sortDir = "desc", filterText = "";
+const hidden = new Set(JSON.parse(localStorage.getItem("lf-hidden-columns") || "[]"));
+
+const escapeHtml = (value) => String(value ?? "").replace(/[&<>"']/g, (c) =>
+  ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+const shortUrl = (url) => String(url).replace(/^https?:\/\//, "").replace(/\/$/, "");
+
+/* ---------------- rendering ---------------- */
+function visibleColumns() { return COLUMNS.filter((column) => !hidden.has(column.key)); }
+
+function renderHead() {
+  el("head").innerHTML = visibleColumns().map((column) => {
+    const sorted = sortKey === column.key;
+    const arrow = sorted ? (sortDir === "asc" ? "&uarr;" : "&darr;") : "&darr;";
+    return `<th data-key="${column.key}" class="${column.sortable ? "sortable" : ""}${sorted ? " sorted" : ""}">`
+      + escapeHtml(column.label) + (column.sortable ? `<span class="arrow">${arrow}</span>` : "") + "</th>";
+  }).join("");
+
+  for (const th of el("head").querySelectorAll("th.sortable")) {
+    th.addEventListener("click", () => {
+      const key = th.dataset.key;
+      if (sortKey === key) sortDir = sortDir === "asc" ? "desc" : "asc";
+      else { sortKey = key; sortDir = key === "name" || key === "address" ? "asc" : "desc"; }
+      renderHead();
+      renderBody();
+    });
+  }
+}
+
+function cellHtml(key, row) {
+  const value = row[key];
+  if (key === "score") {
+    if (value === null || value === undefined) return '<span class="dim">&mdash;</span>';
+    const band = value >= 50 ? "high" : value >= 20 ? "medium" : "low";
+    return `<span class="score ${band}"><span class="score-num">${value}</span>`
+      + `<span class="score-bar"><span class="score-fill" style="width:${Math.max(4, value)}%"></span></span></span>`;
+  }
+  if (key === "signals") {
+    const list = Array.isArray(value) ? value : [];
+    if (!list.length) {
+      return row.score === null || row.score === undefined
+        ? '<span class="dim">&mdash;</span>'
+        : '<span class="dim">clean</span>';
+    }
+    return '<span class="signals">' + list.map((signal) =>
+      `<span class="sig${STRONG_SIGNALS.has(signal) ? " strong" : ""}">${escapeHtml(SIGNAL_LABELS[signal] || signal)}</span>`
+    ).join("") + "</span>";
+  }
+  if (key === "website") {
+    return value
+      ? `<a href="${escapeHtml(value)}" target="_blank" rel="noopener noreferrer">${escapeHtml(shortUrl(value))}</a>`
+      : '<span class="dim">&mdash;</span>';
+  }
+  if (key === "email") {
+    if (!value) {
+      return emailPassRunning && row.website
+        ? '<span class="waiting" title="Checking their site..."></span>'
+        : '<span class="dim">&mdash;</span>';
+    }
+    const mark = row.email_verified === true
+      ? '<span class="verified" title="Domain accepts mail (MX record found)">&check;</span>'
+      : row.email_verified === false
+        ? '<span class="unverified" title="No MX record - this domain may not receive mail">?</span>'
+        : "";
+    return `<a class="email" href="mailto:${escapeHtml(value)}">${escapeHtml(value)}</a>${mark}`
+      + `<button class="copy" data-copy="${escapeHtml(value)}" title="Copy">copy</button>`;
+  }
+  if (key === "phone") {
+    return value
+      ? `${escapeHtml(value)}<button class="copy" data-copy="${escapeHtml(value)}" title="Copy">copy</button>`
+      : '<span class="dim">&mdash;</span>';
+  }
+  if (key === "rating") {
+    if (!value) return '<span class="dim">&mdash;</span>';
+    return escapeHtml(value) + (row.reviews ? ` <span class="dim">(${escapeHtml(row.reviews)})</span>` : "");
+  }
+  return value ? escapeHtml(value) : '<span class="dim">&mdash;</span>';
+}
+
+function rowMatchesFilter(row) {
+  if (!filterText) return true;
+  const haystack = [row.name, row.category, row.address, row.phone, row.website, row.email,
+    ...(row.signals || []).map((s) => SIGNAL_LABELS[s] || s)].join(" ").toLowerCase();
+  return haystack.includes(filterText);
+}
+
+function sortedRows() {
+  const rows = latest.filter(rowMatchesFilter);
+  const column = COLUMNS.find((c) => c.key === sortKey);
+  const direction = sortDir === "asc" ? 1 : -1;
+  return rows.sort((a, b) => {
+    let x = a[sortKey], y = b[sortKey];
+    if (column?.numeric) {
+      x = Number(x); y = Number(y);
+      // Rows not yet graded sort last whichever way the column points.
+      if (Number.isNaN(x) && Number.isNaN(y)) return 0;
+      if (Number.isNaN(x)) return 1;
+      if (Number.isNaN(y)) return -1;
+      return (x - y) * direction;
+    }
+    return String(x ?? "").localeCompare(String(y ?? ""), undefined, { sensitivity: "base" }) * direction;
+  });
+}
+
+/* Rows are keyed so live updates animate only what actually changed. */
+const renderedKeys = new Map();
+
+function renderBody({ animate = true } = {}) {
+  const body = el("rows");
+  const rows = sortedRows();
+  const empty = el("emptyRow");
+
+  if (!rows.length) {
+    [...body.querySelectorAll("tr")].forEach((tr) => { if (tr.id !== "emptyRow") tr.remove(); });
+    renderedKeys.clear();
+    empty.style.display = "";
+    empty.firstElementChild.setAttribute("colspan", visibleColumns().length);
+    empty.firstElementChild.innerHTML = latest.length
+      ? '<span class="empty-title">Nothing matches that filter</span>Try a different word, or clear the filter box.'
+      : '<span class="empty-title">No results yet</span>Pick a city and a category above to start a search.';
+    updateTally();
+    return;
+  }
+  empty.style.display = "none";
+
+  const columns = visibleColumns();
+  const seen = new Set();
+
+  rows.forEach((row) => {
+    const key = row.maps_url || `${row.name}|${row.address}`;
+    seen.add(key);
+    let entry = renderedKeys.get(key);
+
+    if (!entry) {
+      const tr = document.createElement("tr");
+      tr.innerHTML = columns.map((column) => `<td class="${tdClass(column.key)}">${cellHtml(column.key, row)}</td>`).join("");
+      entry = { tr, data: { ...row }, columns: columns.map((c) => c.key).join(",") };
+      renderedKeys.set(key, entry);
+      if (animate) {
+        tr.classList.add("is-new");
+        setTimeout(() => tr.classList.remove("is-new"), 2800);
+      }
+    } else {
+      const layout = columns.map((c) => c.key).join(",");
+      if (entry.columns !== layout) {
+        // Column set changed: rebuild this row without animating it.
+        entry.tr.innerHTML = columns.map((column) => `<td class="${tdClass(column.key)}">${cellHtml(column.key, row)}</td>`).join("");
+        entry.columns = layout;
+        entry.data = { ...row };
+      } else {
+        columns.forEach((column, index) => {
+          const before = JSON.stringify(entry.data[column.key] ?? null);
+          const after = JSON.stringify(row[column.key] ?? null);
+          if (before === after) return;
+          const td = entry.tr.children[index];
+          td.innerHTML = cellHtml(column.key, row);
+          if (row[column.key] && animate) {
+            td.classList.remove("just-filled");
+            void td.offsetWidth;
+            td.classList.add("just-filled");
+            setTimeout(() => td.classList.remove("just-filled"), 2200);
+          }
+        });
+        entry.data = { ...row };
+      }
+    }
+  });
+
+  for (const [key, entry] of renderedKeys) {
+    if (!seen.has(key)) { entry.tr.remove(); renderedKeys.delete(key); }
+  }
+
+  // Reorder only when the DOM order actually differs from the sort. Moving a
+  // <tr> restarts its CSS animation, so doing this every poll would make rows
+  // flash constantly.
+  const desired = rows.map((row) => renderedKeys.get(row.maps_url || `${row.name}|${row.address}`).tr);
+  const current = [...body.children].filter((tr) => tr.id !== "emptyRow");
+  const sameOrder = desired.length === current.length && desired.every((tr, index) => tr === current[index]);
+  if (!sameOrder) for (const tr of desired) body.appendChild(tr);
+
+  updateTally();
+}
+
+const tdClass = (key) => key === "name" ? "name"
+  : key === "category" ? "dim"
+  : (key === "phone" || key === "rating" || key === "score") ? "nowrap" : "";
+
+function updateTally() {
+  const total = latest.length;
+  const shown = latest.filter(rowMatchesFilter).length;
+  const withEmail = latest.filter((row) => row.email).length;
+  el("count").textContent = total
+    ? (shown === total ? `${total} business${total === 1 ? "" : "es"}` : `${shown} of ${total} shown`)
+    : "No results yet";
+  el("exportBtn").disabled = shown === 0;
+  el("exportJsonBtn").disabled = shown === 0;
+  const pill = el("emailPill");
+  if (withEmail) { pill.style.display = ""; pill.textContent = `${withEmail} with email`; }
+  else pill.style.display = "none";
+}
+
+function setRows(rows, options) {
+  latest = rows;
+  renderBody(options);
+}
+
+function resetTable() {
+  renderedKeys.clear();
+  [...el("rows").querySelectorAll("tr")].forEach((tr) => { if (tr.id !== "emptyRow") tr.remove(); });
+  latest = [];
+  renderBody();
+}
+
+/* ---------------- status ---------------- */
+function setStatus(text, kind, badge) {
+  const box = el("status");
+  const label = el("statusText");
+  box.className = "panel on" + (kind ? " " + kind : "");
+  el("statusBadge").textContent = badge || "";
+  if (label.textContent === text) return;
+  label.classList.add("swap");
+  setTimeout(() => { label.textContent = text; label.classList.remove("swap"); }, 120);
+}
+
+/* ---------------- run ---------------- */
+async function startSearch() {
+  const city = el("city").value.trim();
+  if (!city) { setStatus("Type a city or area first.", "attention"); el("city").focus(); return; }
+
+  resetTable();
+  emailPassRunning = false;
+  el("searchBtn").disabled = true;
+  el("stopBtn").style.display = "inline-block";
+  el("liveDot").style.display = "";
+  setStatus("Starting...", "working");
+
+  let data;
+  try {
+    const response = await fetch("/search", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        city, category: el("category").value,
+        only_with_website: el("onlyWebsite").checked,
+        lookup_emails: el("lookupEmails").checked,
+      }),
+    });
+    data = await response.json();
+    if (!response.ok) throw new Error(data.error || "Could not start the search.");
+  } catch (error) {
+    finish();
+    setStatus(error.message, "blocked", "!");
+    return;
+  }
+
+  jobId = data.job_id;
+  poller = setInterval(poll, 2000);
+  poll();
+}
+
+async function poll() {
+  if (!jobId) return;
+  let data;
+  try { data = await (await fetch("/status/" + jobId)).json(); } catch { return; }
+
+  emailPassRunning = data.phase === "emails";
+  setRows(data.results || []);
+
+  const finished = ["done", "stopped", "blocked", "error"].includes(data.state);
+  const kind = data.state === "blocked" || data.state === "error" ? "blocked"
+    : data.needs_attention ? "attention" : finished ? "done" : "working";
+  setStatus(data.message || "", kind, kind === "done" ? "✓" : kind === "blocked" ? "!" : "");
+
+  if (finished) { finish(); loadRuns(); }
+}
+
+function finish() {
+  clearInterval(poller);
+  poller = null; jobId = null; emailPassRunning = false;
+  el("searchBtn").disabled = false;
+  el("stopBtn").style.display = "none";
+  el("liveDot").style.display = "none";
+}
+
+async function stopSearch() {
+  if (!jobId) return;
+  el("stopBtn").disabled = true;
+  try { await fetch("/stop/" + jobId, { method: "POST" }); } finally {
+    setTimeout(() => { el("stopBtn").disabled = false; }, 1000);
+  }
+}
+
+/* ---------------- export ---------------- */
+const EXPORT_FIELDS = ["score", "name", "category", "rating", "reviews", "address", "phone",
+  "website", "email", "email_verified", "signals", "site_builder", "maps_url"];
+
+function download(blob, extension) {
+  const link = document.createElement("a");
+  link.href = URL.createObjectURL(blob);
+  link.download = `leads-${el("category").value.replace(/\s+/g, "-")}-${new Date().toISOString().slice(0, 10)}.${extension}`;
+  link.click();
+  URL.revokeObjectURL(link.href);
+}
+
+function exportCsv() {
+  const cell = (value) => `"${String(Array.isArray(value) ? value.join("; ") : value ?? "").replace(/"/g, '""')}"`;
+  const lines = [EXPORT_FIELDS.map(cell).join(",")];
+  for (const row of sortedRows()) lines.push(EXPORT_FIELDS.map((field) => cell(row[field])).join(","));
+  // Excel needs the BOM to read UTF-8 accents correctly.
+  download(new Blob(["﻿" + lines.join("\r\n")], { type: "text/csv;charset=utf-8;" }), "csv");
+}
+
+function exportJson() {
+  const rows = sortedRows().map((row) => Object.fromEntries(EXPORT_FIELDS.map((f) => [f, row[f] ?? null])));
+  download(new Blob([JSON.stringify(rows, null, 2)], { type: "application/json" }), "json");
+}
+
+/* ---------------- run history ---------------- */
+async function loadRuns() {
+  try {
+    const { runs } = await (await fetch("/api/runs")).json();
+    el("historyCount").textContent = runs.length ? `(${runs.length})` : "(none yet)";
+    el("runs").innerHTML = runs.length
+      ? runs.map((run) => {
+          const when = run.createdAt ? new Date(run.createdAt).toLocaleString() : "date unknown";
+          const title = run.category || run.city
+            ? `${escapeHtml(run.category || "search")} &middot; ${escapeHtml(run.city || "?")}`
+            : escapeHtml(run.id);
+          return `<button class="run" data-run="${escapeHtml(run.id)}">
+            <div class="run-title">${title}</div>
+            <div class="run-meta">${run.count} result${run.count === 1 ? "" : "s"} &middot; ${run.withEmail} with email<br>${escapeHtml(when)}</div>
+          </button>`;
+        }).join("")
+      : '<p class="dim" style="margin:0;font-size:13px">Runs you complete are saved here automatically.</p>';
+
+    for (const button of el("runs").querySelectorAll("[data-run]")) {
+      button.addEventListener("click", () => openRun(button.dataset.run));
+    }
+  } catch {
+    el("historyCount").textContent = "(unavailable)";
+  }
+}
+
+async function openRun(id) {
+  try {
+    const data = await (await fetch("/api/runs/" + id)).json();
+    if (!data.results) throw new Error("empty");
+    resetTable();
+    emailPassRunning = false;
+    setRows(data.results, { animate: false });
+    setStatus(`Showing a saved run: ${data.count} businesses. Start a new search to replace it.`, "done", "✓");
+  } catch {
+    setStatus("Could not open that run.", "blocked", "!");
+  }
+}
+
+/* ---------------- columns menu ---------------- */
+function renderColumnsMenu() {
+  el("columnsMenu").innerHTML = COLUMNS.map((column) =>
+    `<label><input type="checkbox" data-column="${column.key}" ${hidden.has(column.key) ? "" : "checked"}> ${escapeHtml(column.label)}</label>`
+  ).join("");
+
+  for (const input of el("columnsMenu").querySelectorAll("input")) {
+    input.addEventListener("change", () => {
+      if (input.checked) hidden.delete(input.dataset.column);
+      else hidden.add(input.dataset.column);
+      localStorage.setItem("lf-hidden-columns", JSON.stringify([...hidden]));
+      renderHead();
+      renderedKeys.clear();
+      el("rows").querySelectorAll("tr").forEach((tr) => { if (tr.id !== "emptyRow") tr.remove(); });
+      renderBody({ animate: false });
+    });
+  }
+}
+
+/* ---------------- config ---------------- */
+async function loadConfig() {
+  try {
+    const config = await (await fetch("/api/config")).json();
+    el("category").innerHTML = config.categories
+      .map((category) => `<option value="${escapeHtml(category)}">${escapeHtml(category)}</option>`).join("");
+    el("maxResults").textContent = config.maxResults;
+
+    const mode = el("modeChip");
+    mode.textContent = config.headless ? "headless" : "headed";
+    mode.classList.toggle("on", config.headless);
+    mode.title = config.headless
+      ? "Chromium runs in the background - no window opens."
+      : "Chromium opens a visible window you can watch.";
+
+    const emails = el("emailChip");
+    emails.textContent = config.lookupEmails ? "site grading on" : "site grading off";
+    emails.classList.toggle("on", config.lookupEmails);
+    el("lookupEmails").checked = config.lookupEmails;
+  } catch {
+    setStatus("Could not reach the server. Is it running?", "blocked", "!");
+  }
+}
+
+/* ---------------- wiring ---------------- */
+el("searchBtn").addEventListener("click", startSearch);
+el("stopBtn").addEventListener("click", stopSearch);
+el("exportBtn").addEventListener("click", exportCsv);
+el("exportJsonBtn").addEventListener("click", exportJson);
+el("city").addEventListener("keydown", (event) => {
+  if (event.key === "Enter" && !el("searchBtn").disabled) startSearch();
+});
+
+let filterTimer = null;
+el("filter").addEventListener("input", (event) => {
+  clearTimeout(filterTimer);
+  filterTimer = setTimeout(() => {
+    filterText = event.target.value.trim().toLowerCase();
+    renderBody({ animate: false });
+  }, 150);
+});
+
+el("columnsBtn").addEventListener("click", (event) => {
+  event.stopPropagation();
+  el("columnsMenu").classList.toggle("open");
+});
+document.addEventListener("click", () => el("columnsMenu").classList.remove("open"));
+el("columnsMenu").addEventListener("click", (event) => event.stopPropagation());
+
+// One delegated listener covers every copy button, including future rows.
+document.addEventListener("click", async (event) => {
+  const button = event.target.closest(".copy");
+  if (!button) return;
+  try {
+    await navigator.clipboard.writeText(button.dataset.copy);
+    const original = button.textContent;
+    button.textContent = "copied";
+    button.classList.add("done");
+    setTimeout(() => { button.textContent = original; button.classList.remove("done"); }, 1200);
+  } catch {
+    button.textContent = "failed";
+    setTimeout(() => { button.textContent = "copy"; }, 1200);
+  }
+});
+
+function toggleHistory() {
+  const open = el("historyBody").classList.toggle("open");
+  el("historyCaret").classList.toggle("open", open);
+  el("historyHead").setAttribute("aria-expanded", String(open));
+}
+el("historyHead").addEventListener("click", toggleHistory);
+el("historyHead").addEventListener("keydown", (event) => {
+  if (event.key === "Enter" || event.key === " ") { event.preventDefault(); toggleHistory(); }
+});
+
+renderHead();
+renderColumnsMenu();
+renderBody();
+loadConfig();
+loadRuns();
+</script>
+</body>
+</html>

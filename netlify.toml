@@ -1,0 +1,21 @@
+# Netlify only serves the static demo in dist/.
+#
+# The scraper itself cannot run here: it needs a long-lived Node process, a
+# real Chromium, a writable disk for runs/, and 5-15 minutes per job. Netlify
+# functions give none of those. Run the real app locally (npm start) or on a
+# container host using the Dockerfile.
+
+[build]
+  command = "npm run build:demo"
+  publish = "dist"
+
+[build.environment]
+  NODE_VERSION = "20"
+  # Chromium is only needed by the scraper, which does not run in this build.
+  PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD = "1"
+
+[[headers]]
+  for = "/*"
+  [headers.values]
+    X-Content-Type-Options = "nosniff"
+    Referrer-Policy = "strict-origin-when-cross-origin"

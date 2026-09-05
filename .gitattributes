@@ -1,0 +1,5 @@
+# Normalise to LF in the repository; check out native on Windows.
+* text=auto eol=lf
+
+# Keep binary-ish and lockfiles out of diffs.
+package-lock.json linguist-generated=true -diff
