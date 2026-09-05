@@ -13,9 +13,9 @@ Runs **headless by default** — no browser window opens. Node.js, Express and
 Playwright; no database, no build step, no frontend framework.
 
 ![Node](https://img.shields.io/badge/node-%3E%3D20-brightgreen)
-![Express](https://img.shields.io/badge/express-4.x-lightgrey)
-![Playwright](https://img.shields.io/badge/playwright-1.47-blue)
-![Tests](https://img.shields.io/badge/tests-52%20passing-236B50)
+![Express](https://img.shields.io/badge/express-5.x-lightgrey)
+![Playwright](https://img.shields.io/badge/playwright-1.63-blue)
+![Tests](https://img.shields.io/badge/tests-61%20passing-236B50)
 
 ---
 
@@ -26,6 +26,25 @@ for freelance web work: they've shown they'll pay for one, and you can see what
 they currently have. Google Maps has the listings but no export, and its Places
 API returns no email addresses. So this does two passes — one over Maps for the
 listings, one over each business's own site for the email.
+
+> [!IMPORTANT]
+> This is an unofficial, low-volume developer tool. It is not affiliated with
+> or endorsed by Google. You are responsible for complying with applicable
+> laws, website terms, robots.txt directives, and privacy requirements. The
+> scraper stops when it encounters CAPTCHA, unusual-traffic, consent, or other
+> blocking pages and does not try to bypass them.
+
+## Contributing and security
+
+Contributions are welcome. Read [CONTRIBUTING.md](CONTRIBUTING.md) before
+opening a pull request; it explains the test workflow and the scraper
+safeguards that changes must preserve. Please use GitHub Discussions for usage
+questions and the issue forms for reproducible bugs or focused features.
+
+Report vulnerabilities privately through [GitHub Security
+Advisories](https://github.com/zubair-official/lead_finder/security/advisories/new)
+as described in [SECURITY.md](SECURITY.md). Do not post credentials, cookies,
+browser profiles, or scraped lead data in a public issue.
 
 ## Quick start
 

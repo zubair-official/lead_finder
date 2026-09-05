@@ -1,0 +1,31 @@
+name: Feature request
+description: Suggest a focused improvement to Lead Finder.
+title: "[Feature]: "
+labels: [enhancement]
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem
+      description: What workflow is difficult today?
+    validations:
+      required: true
+
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposed solution
+      description: Describe the smallest useful version and any tradeoffs.
+    validations:
+      required: true
+
+  - type: checkboxes
+    id: boundaries
+    attributes:
+      label: Project boundaries
+      options:
+        - label: This feature preserves the one-browser, low-volume design and stop-on-block behavior.
+          required: true
+        - label: This feature does not bypass a CAPTCHA, rate limit, access control, robots.txt, or other protective measure.
+          required: true
+

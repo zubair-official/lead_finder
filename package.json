@@ -17,11 +17,25 @@
     "node": ">=20"
   },
   "dependencies": {
-    "@netlify/functions": "^6.0.0",
     "cheerio": "^1.0.0",
-    "express": "^4.22.2",
-    "playwright": "1.47.0",
-    "robots-parser": "^3.0.1",
-    "serverless-http": "^4.0.0"
-  }
+    "express": "^5.2.1",
+    "playwright": "^1.63.0",
+    "robots-parser": "^3.0.1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/zubair-official/lead_finder.git"
+  },
+  "homepage": "https://github.com/zubair-official/lead_finder#readme",
+  "bugs": {
+    "url": "https://github.com/zubair-official/lead_finder/issues"
+  },
+  "keywords": [
+    "lead-generation",
+    "google-maps",
+    "playwright",
+    "express",
+    "web-development",
+    "prospecting"
+  ]
 }

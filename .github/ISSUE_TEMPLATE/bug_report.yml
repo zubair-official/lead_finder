@@ -1,0 +1,67 @@
+name: Bug report
+description: Report reproducible behavior in the local app or static demo.
+title: "[Bug]: "
+labels: [bug]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for helping improve Lead Finder. Remove business contact data, cookies, tokens, and other sensitive information before posting logs or screenshots.
+
+  - type: dropdown
+    id: surface
+    attributes:
+      label: Where did the problem happen?
+      options:
+        - Local app
+        - Console scraper
+        - Netlify demo
+        - Docker deployment
+    validations:
+      required: true
+
+  - type: input
+    id: version
+    attributes:
+      label: Environment
+      description: OS, Node.js version, and browser mode (headless or headed).
+      placeholder: Windows 11, Node 20.18, headless
+    validations:
+      required: true
+
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      description: Include the category and a general area, but redact private or sensitive data.
+      placeholder: |
+        1. Start with npm start
+        2. Search cafes in ...
+        3. Observe ...
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected behavior
+    validations:
+      required: true
+
+  - type: textarea
+    id: actual
+    attributes:
+      label: Actual behavior and sanitized logs
+    validations:
+      required: true
+
+  - type: checkboxes
+    id: conduct
+    attributes:
+      label: Safety check
+      options:
+        - label: I removed credentials, cookies, personal data, and scraped lead data from this report.
+          required: true
+        - label: This request does not ask to bypass a CAPTCHA, rate limit, access control, or other protective measure.
+          required: true
+

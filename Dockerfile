@@ -1,6 +1,6 @@
 # The Playwright image already contains Chromium and its system libraries,
 # which is most of the pain of running a browser in a container.
-FROM mcr.microsoft.com/playwright:v1.47.0-jammy
+FROM mcr.microsoft.com/playwright:v1.63.0-noble
 
 ENV NODE_ENV=production \
     HOST=0.0.0.0 \
